@@ -20,10 +20,11 @@ export default function RootLayout() {
     <>
       <Stack
         screenOptions={{
-          contentStyle: { backgroundColor: 'transparent' }, // <-- aqui!
+          contentStyle: { backgroundColor: 'transparent' },
+          headerShown: false,
         }}
       >
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="(tabs)/index" options={{ headerShown: false }} />
         <Stack.Screen name="+not-found" />
       </Stack>
       <StatusBar style="auto" />

@@ -1,25 +1,37 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View, Platform } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Toast from 'react-native-toast-message';
 import { useRouter } from "expo-router";
-import { Picker } from '@react-native-picker/picker';
+import { Dropdown } from 'react-native-element-dropdown';
+import AntDesign from '@expo/vector-icons/AntDesign';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+
+const data = [
+    { label: 'Churrasqueira', value: '1' },
+    { label: 'Salão de Festas', value: '2' },
+    { label: 'Piscina', value: '3' },
+    { label: 'Academia', value: '4' },
+    { label: 'Playground', value: '5' },
+    { label: 'Garagem', value: '6' },
+    { label: 'Área Verde', value: '7' },
+    { label: 'Salão de Jogos', value: '8' },
+];
 
 export default function ReservarScreen() {
-    const [selectedSpace, setSelectedSpace] = useState('Churrasqueira');
-    const [date, setDate] = useState<Date | null>(null);
-    const [showPicker, setShowPicker] = useState(false);
     const router = useRouter();
+    const [value, setValue] = useState(null);
+    const [isFocus, setIsFocus] = useState(false);
 
-    // Format date as dd/mm/yyyy
+    const [showDatePicker, setShowDatePicker] = useState(false);
+    const [selectedDate, setSelectedDate] = useState<Date | null>(null); // null means no date picked
+
     function formatDate(date: Date | null): string {
-        if (!date) return '';
-        const dd: string = String(date.getDate()).padStart(2, '0');
-        const mm: string = String(date.getMonth() + 1).padStart(2, '0');
-        const yyyy: number = date.getFullYear();
-        return `${dd}/${mm}/${yyyy}`;
+        if (!date) return 'dd / mm / yyyy';
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        return `${day} / ${month} / ${year}`;
     }
 
     return (
@@ -31,41 +43,59 @@ export default function ReservarScreen() {
         >
             <View style={styles.card}>
                 <Text style={styles.title}>Reserva de Espaços</Text>
-                
-                <View style={styles.pickerWrapper}>
-                    <Picker
-                        selectedValue={selectedSpace}
-                        style={styles.picker}
-                        dropdownIconColor="#f3eaff"
-                        onValueChange={(itemValue) => setSelectedSpace(itemValue)}
-                    >
-                        <Picker.Item label="Churrasqueira" value="Churrasqueira" />
-                        <Picker.Item label="Salão de Festas" value="Salão de Festas" />
-                        <Picker.Item label="Quadra" value="Quadra" />
-                        {/* Add more spaces as needed */}
-                    </Picker>
-                </View>
+
+                <Dropdown
+                    // style={[styles.dropdown, isFocus && { borderColor: 'blue' }]}
+                    style={[styles.dropdown]}
+                    placeholderStyle={styles.placeholderStyle}
+                    selectedTextStyle={styles.selectedTextStyle}
+                    inputSearchStyle={styles.inputSearchStyle}
+                    containerStyle={styles.dropdownContainer}
+                    itemContainerStyle={styles.dropdownItemContainer}
+                    iconStyle={styles.iconStyle}
+                    data={data}
+                    search
+                    maxHeight={300}
+                    labelField="label"
+                    valueField="value"
+                    placeholder={!isFocus ? 'Selecione um espaço' : '...'}
+                    searchPlaceholder="Pesquisar..."
+                    value={value}
+                    onFocus={() => setIsFocus(true)}
+                    onBlur={() => setIsFocus(false)}
+                    onChange={item => {
+                        setValue(item.value);
+                        setIsFocus(false);
+                    }}
+                    renderLeftIcon={() => (
+                        <AntDesign
+                            style={styles.icon}
+                            color={isFocus ? 'black' : 'black'}
+                            name="home"
+                            size={20}
+                        />
+                    )}
+                />
 
                 <TouchableOpacity
                     style={styles.dateInput}
-                    onPress={() => setShowPicker(true)}
-                    activeOpacity={0.7}
+                    onPress={() => setShowDatePicker(true)}
+                    activeOpacity={0.8}
                 >
-                    <Text style={{ color: date ? "#fff" : "#f3eaff", fontSize: 16 }}>
-                        {date ? formatDate(date) : "dd / mm / yyyy"}
+                    <Text style={styles.dateInputText}>
+                        {formatDate(selectedDate)}
                     </Text>
-                    <MaterialCommunityIcons name="calendar-month-outline" size={22} color="#f3eaff" />
+                    <AntDesign name="calendar" size={22} color="#fff" style={styles.calendarIcon} />
                 </TouchableOpacity>
-                
-                {showPicker && (
+                {showDatePicker && (
                     <DateTimePicker
-                        value={date || new Date()}
+                        value={selectedDate || new Date()}
                         mode="date"
-                        display={Platform.OS === 'ios' ? "spinner" : "default"}
-                        minimumDate={new Date()}
-                        onChange={(event, selectedDate) => {
-                            setShowPicker(Platform.OS === 'ios'); // iOS: keep open, Android: close after select
-                            if (selectedDate) setDate(selectedDate);
+                        is24Hour={true}
+                        display="default"
+                        onChange={(event, date) => {
+                            setShowDatePicker(false);
+                            if (date) setSelectedDate(date);
                         }}
                     />
                 )}
@@ -73,22 +103,15 @@ export default function ReservarScreen() {
                 <TouchableOpacity
                     style={styles.submitBtn}
                     onPress={() => {
-                        if (!date) {
-                            Toast.show({
-                                type: 'error',
-                                text1: 'Selecione uma data!',
-                            });
-                            return;
-                        }
                         Toast.show({
                             type: 'success',
-                            text1: 'Reserva enviada!',
-                            text2: `Espaço: ${selectedSpace}, Data: ${formatDate(date)}`,
+                            text1: 'Reserva feita com sucesso!',
+                            text2: 'Você receberá uma confirmação por e-mail.',
                         });
-                        router.back();
+                        router.push('../');
                     }}
                 >
-                    <Text style={styles.submitBtnText}>Reservar</Text>
+                    <Text style={styles.submitBtnText}>Enviar</Text>
                 </TouchableOpacity>
             </View>
         </LinearGradient>
@@ -117,25 +140,59 @@ const styles = StyleSheet.create({
         color: '#fff',
         marginBottom: 18,
     },
-    pickerWrapper: {
-        backgroundColor: 'rgba(255,255,255,0.13)',
+    dropdown: {
+        height: 50,
+        borderColor: 'gray',
+        borderWidth: 0.5,
         borderRadius: 8,
-        marginBottom: 12,
+        paddingHorizontal: 8,
+        backgroundColor: 'rgb(242, 234, 255)',
+        marginBottom: 16,
     },
-    picker: {
-        color: '#fff',
-        width: '100%',
-        height: 48,
+    icon: {
+        marginRight: 5,
+    },
+    placeholderStyle: {
+        fontSize: 16,
+        color: 'rgb(0, 0, 0)',
+    },
+    selectedTextStyle: {
+        fontSize: 16,
+        color: '#333'
+    },
+    iconStyle: {
+        width: 20,
+        height: 20,
+    },
+    inputSearchStyle: {
+        height: 40,
+        fontSize: 16,
+    },
+    dropdownContainer: {
+        backgroundColor: 'rgba(185, 133, 255, 0.95)', // panel background
+        borderRadius: 8,
+    },
+    dropdownItemContainer: {
+        backgroundColor: 'rgba(185, 133, 255, 0.15)', // item background
+        borderRadius: 8,
     },
     dateInput: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        backgroundColor: 'rgba(255,255,255,0.13)',
+        backgroundColor: '#a142e4', // your purple
         borderRadius: 8,
-        paddingHorizontal: 16,
+        paddingHorizontal: 14,
         height: 48,
-        marginBottom: 16,
+        marginBottom: 18,
+        justifyContent: 'space-between',
+    },
+    dateInputText: {
+        color: '#fff',
+        fontSize: 18,
+        letterSpacing: 1,
+    },
+    calendarIcon: {
+        marginLeft: 10,
     },
     submitBtn: {
         backgroundColor: 'rgba(94, 110, 255, 0.96)',
